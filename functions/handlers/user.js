@@ -1,30 +1,22 @@
+const firebase = require("firebase");
 const { db } = require("../utils/admin");
+const config = require("../utils/config");
+const { validateSignup, validateLogin } = require("../utils/validators");
+
+firebase.initializeApp(config);
 
 exports.userSignup = (req, res) => {
   const newUser = {
     email: req.body.email,
     password: req.body.password,
-    comfirmPassword: req.body.comfirmPassword,
+    confirmPassword: req.body.confirmPassword,
     handle: req.body.handle
   };
 
-  let errors = {};
-  if (isEmpty(newUser.email)) {
-    errors.email = "Email must not be empty";
-  } else if (!isEmail(newUser.email)) {
-    errors.email = "Must be a valid email address";
+  const validate = validateSignup(newUser);
+  if (validate) {
+    return res.status(400).json(validate);
   }
-
-  if (isEmpty(newUser.password)) errors.password = "Password must not be empty";
-  let token, userId;
-
-  if (newUser.password !== newUser.comfirmPassword)
-    errors.confirmPassword = "Password must match";
-
-  if (isEmpty(newUser.handle)) errors.handle = "Handle must not be empty";
-
-  if (Object.keys(errors).length > 0) return res.status(400).json(errors);
-
   db.doc(`/users/${newUser.handle}`)
     .get()
     .then(doc => {
@@ -72,13 +64,10 @@ exports.userLogin = (req, res) => {
     email: req.body.email,
     password: req.body.password
   };
-
-  let errors = {};
-
-  if (isEmpty(user.email)) errors.email = "Email must not be empty";
-  if (isEmpty(user.password)) errors.password = "Password must not be empty";
-
-  if (Object.keys(errors).length > 0) return res.status(400).json(errors);
+  const validate = validateLogin(user);
+  if (validate) {
+    return res.status(400).json(validate);
+  }
   firebase
     .auth()
     .signInWithEmailAndPassword(user.email, user.password)
