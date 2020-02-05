@@ -25,9 +25,13 @@ module.exports = (req, res, next) => {
     })
     .then(data => {
       req.user.handle = data.docs[0].data().handle;
+      req.user.imageUrl = data.docs[0].data().imageUrl;
       return next();
     })
     .catch(err => {
+      if (err.code === "auth/id-token-expired") {
+        res.status(403).json({ error: "Your token has expired" });
+      }
       console.error(err);
       return res.status(403).json(err);
     });
